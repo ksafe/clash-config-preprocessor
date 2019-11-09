@@ -38,16 +38,20 @@ def handle_v1(data: OrderedDict) -> OrderedDict:
         black_regex = re.compile(item["proxies-filters"]["black-regex"])
         white_regex = re.compile(item["proxies-filters"]["white-regex"])
 
+        if "flat-proxies" in item and item["flat-proxies"] is not None:
+            ps.extend(item["flat-proxies"])
+
         for p in proxies:
             p_name: str = p["name"]
             if white_regex.fullmatch(p_name) and not black_regex.fullmatch(p_name):
                 ps.append(p_name)
 
-        if "flat-proxies" in item:
-            ps.extend(item["flat-proxies"])
+        if "back-flat-proxies" in item and item["back-flat-proxies"] is not None:
+            ps.extend(item["back-flat-proxies"])
 
         group_data.pop("proxies-filters", None)
         group_data.pop("flat-proxies", None)
+        group_data.pop("back-flat-proxies", None)
 
         group_data["proxies"] = ps
 
@@ -61,15 +65,16 @@ def handle_v1(data: OrderedDict) -> OrderedDict:
             item_name: str = item["name"]
             item_type: str = item["type"]
             item_map: dict = {}
-
+            item_rule_skip = item.get("rule-skip", {})
+            item_target_skip = item.get("target-skip", {})
             for target_map_element in item.get("target-map", {}):
                 kv: list = target_map_element.split(",")
                 item_map[kv[0]] = kv[1]
 
             if item_type == "url":
-                rule_sets[item_name] = load_url_rule_set(item["url"], item_map)
+                rule_sets[item_name] = load_url_rule_set(item["url"], item_map, item_rule_skip, item_target_skip)
             elif item_type == "file":
-                rule_sets[item_name] = load_file_rule_set(item["path"], item_map)
+                rule_sets[item_name] = load_file_rule_set(item["path"], item_map, item_rule_skip, item_target_skip)
 
     rules: list = []
 
@@ -104,22 +109,23 @@ def load_plain_proxies(data: OrderedDict) -> OrderedDict:
     return data["data"]
 
 
-def load_url_rule_set(url: str, targetMap: dict) -> list:
+def load_url_rule_set(url: str, targetMap: dict, skipRule: set, skipTarget: set) -> list:
     data = yaml.load(requests.get(url).content, Loader=yaml.Loader)
     result: list = []
 
     for rule in data["Rule"]:
         original_target = str(rule).split(",")[-1]
         map_to: str = targetMap.get(original_target)
-        if not map_to is None:
-            result.append(str(rule).replace(original_target, map_to))
-        else:
-            result.append(rule)
+        if str(rule).split(',')[0] not in skipRule and original_target not in skipTarget:
+            if not map_to is None:
+                result.append(str(rule).replace(original_target, map_to))
+            else:
+                result.append(str(rule))
 
     return result
 
 
-def load_file_rule_set(path: str, targetMap: dict) -> list:
+def load_file_rule_set(path: str, targetMap: dict, skipRule: set, skipTarget: set) -> list:
     with open(path, "r") as f:
         data = yaml.load(f, Loader=yaml.Loader)
     result: list = []
@@ -127,9 +133,10 @@ def load_file_rule_set(path: str, targetMap: dict) -> list:
     for rule in data["Rule"]:
         original_target = str(rule).split(",")[-1]
         map_to: str = targetMap.get(original_target)
-        if not map_to is None:
-            result.append(str(rule).replace(original_target, map_to))
-        else:
-            result.append(rule)
+        if str(rule).split(',')[0] not in skipRule and original_target not in skipTarget:
+            if not map_to is None:
+                result.append(str(rule).replace(original_target, map_to))
+            else:
+                result.append(rule)
 
     return result
