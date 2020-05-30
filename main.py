@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import re
 from collections import OrderedDict
 
 import sys
@@ -32,7 +33,9 @@ def main():
         print("Unsupported version")
         return
 
-    print(yaml.dump(result, default_flow_style=False))
+    result = yaml.dump(result, default_flow_style=False)
+    regex = re.compile(r'\b(password:\s*)\b[\"\']?(.*)[\'\"]?\b', re.VERBOSE)
+    print(regex.sub(r'\1"\2"', result))
 
 
 if __name__ == "__main__":

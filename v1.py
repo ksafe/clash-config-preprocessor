@@ -6,6 +6,13 @@ import re
 from collections import OrderedDict
 
 
+def get_proxies_regex(item, param):
+    if param in item["proxies-filters"] is not None:
+        return re.compile(item["proxies-filters"][param])
+    else:
+        return re.compile("")
+
+
 def handle_v1(data: OrderedDict) -> OrderedDict:
     preprocessor: OrderedDict = data["preprocessor"]
 
@@ -21,22 +28,33 @@ def handle_v1(data: OrderedDict) -> OrderedDict:
     proxies: list = []
 
     for item in proxy_sources_dicts:
+        proxies2: list = []
         if item["type"] == "url":
-            proxies += load_url_proxies(item["url"])
+            proxies2 += load_url_proxies(item["url"])
         elif item["type"] == "file":
-            proxies += load_file_proxies(item["path"])
+            proxies2 += load_file_proxies(item["path"])
         elif item["type"] == "plain":
-            proxies.append(load_plain_proxies(item))
+            proxies2.append(load_plain_proxies(item))
+
+        if "proxies-filters" in item:
+            black_regex = get_proxies_regex(item, "black-regex")
+            white_regex = get_proxies_regex(item, "white-regex")
+
+            for p in proxies2:
+                p_name: str = p["name"]
+                if white_regex.fullmatch(p_name) and not black_regex.fullmatch(p_name):
+                    proxies.append(p)
+        else:
+            proxies += proxies2
 
     proxy_group_dispatch_dicts: list = data["proxy-group-dispatch"]
     proxy_groups: list = []
-
+    removed_proxy: list = []
     for item in proxy_group_dispatch_dicts:
         group_data: OrderedDict = item.copy()
         ps: list = []
-
-        black_regex = re.compile(item["proxies-filters"]["black-regex"])
-        white_regex = re.compile(item["proxies-filters"]["white-regex"])
+        black_regex = get_proxies_regex(item, "black-regex")
+        white_regex = get_proxies_regex(item, "white-regex")
 
         if "flat-proxies" in item and item["flat-proxies"] is not None:
             ps.extend(item["flat-proxies"])
@@ -53,9 +71,21 @@ def handle_v1(data: OrderedDict) -> OrderedDict:
         group_data.pop("flat-proxies", None)
         group_data.pop("back-flat-proxies", None)
 
+        if len(ps) < 1:
+            removed_proxy.append(group_data["name"])
+            continue
+
         group_data["proxies"] = ps
 
         proxy_groups.append(group_data)
+
+    for proxy_group in proxy_groups:
+        proxy_group_proxies: list = []
+        for p in proxy_group["proxies"]:
+            if p in removed_proxy:
+                continue
+            proxy_group_proxies.append(p)
+        proxy_group["proxies"] = proxy_group_proxies
 
     rule_sets_dicts: list = data["rule-sets"]
     rule_sets: dict = {}
@@ -109,15 +139,15 @@ def load_plain_proxies(data: OrderedDict) -> OrderedDict:
     return data["data"]
 
 
-def load_url_rule_set(url: str, targetMap: dict, skipRule: set, skipTarget: set) -> list:
+def load_url_rule_set(url: str, target_map: dict, skip_rule: set, skip_target: set) -> list:
     data = yaml.load(requests.get(url).content, Loader=yaml.Loader)
     result: list = []
 
-    for rule in data["Rule"]:
+    for rule in data:
         original_target = str(rule).split(",")[-1]
-        map_to: str = targetMap.get(original_target)
-        if str(rule).split(',')[0] not in skipRule and original_target not in skipTarget:
-            if not map_to is None:
+        map_to: str = target_map.get(original_target)
+        if str(rule).split(',')[0] not in skip_rule and original_target not in skip_target:
+            if map_to is not None:
                 result.append(str(rule).replace(original_target, map_to))
             else:
                 result.append(str(rule))
@@ -125,15 +155,15 @@ def load_url_rule_set(url: str, targetMap: dict, skipRule: set, skipTarget: set)
     return result
 
 
-def load_file_rule_set(path: str, targetMap: dict, skipRule: set, skipTarget: set) -> list:
+def load_file_rule_set(path: str, target_map: dict, skip_rule: set, skip_target: set) -> list:
     with open(path, "r") as f:
         data = yaml.load(f, Loader=yaml.Loader)
     result: list = []
 
     for rule in data["Rule"]:
         original_target = str(rule).split(",")[-1]
-        map_to: str = targetMap.get(original_target)
-        if str(rule).split(',')[0] not in skipRule and original_target not in skipTarget:
+        map_to: str = target_map.get(original_target)
+        if str(rule).split(',')[0] not in skip_rule and original_target not in skip_target:
             if not map_to is None:
                 result.append(str(rule).replace(original_target, map_to))
             else:
