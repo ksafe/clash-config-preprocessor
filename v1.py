@@ -7,10 +7,9 @@ from collections import OrderedDict
 
 
 def get_proxies_regex(item, param):
-    if param in item["proxies-filters"] is not None:
+    if "proxies-filters" in item and param in item["proxies-filters"] is not None:
         return re.compile(item["proxies-filters"][param])
-    else:
-        return re.compile("")
+    return re.compile("")
 
 
 def handle_v1(data: OrderedDict) -> OrderedDict:
