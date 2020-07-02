@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 import re
-from collections import OrderedDict
-
 import sys
 import yaml
+from collections import OrderedDict
+
 import utils
 import v1
 
 _HELP_TEXT = """\
-Usage: python main.py <source-path>
-    <source-path>: path to clash config preprocessor config
+Usage: python main.py <source-path> [save-path]
+    <source-path>: path to preprocessor config
+    [save-path]: path to clash config
 
 See also:
     https://github.com/Kr328/clash-config-preprocessor
@@ -19,7 +20,7 @@ See also:
 def main():
     utils.setup_order_yaml()
 
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         print("Argument source required")
         print(_HELP_TEXT)
         return
@@ -35,7 +36,12 @@ def main():
 
     result = yaml.dump(result, default_flow_style=False)
     regex = re.compile(r'\b(password:\s*)\b[\"\']?(.*)[\'\"]?\b', re.VERBOSE)
-    print(regex.sub(r'\1"\2"', result))
+    result = regex.sub(r'\1"\2"', result)
+    if len(sys.argv) > 2:
+        with open(sys.argv[2], "w") as f:
+            f.write(result)
+    else:
+        print(result)
 
 
 if __name__ == "__main__":

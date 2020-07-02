@@ -1,9 +1,9 @@
-import requests
-import utils
-import yaml
 import re
-
+import requests
+import yaml
 from collections import OrderedDict
+
+import utils
 
 
 def get_proxies_regex(item, param):
@@ -34,6 +34,14 @@ def handle_v1(data: OrderedDict) -> OrderedDict:
             proxies2 += load_file_proxies(item["path"])
         elif item["type"] == "plain":
             proxies2.append(load_plain_proxies(item))
+
+        print("proxy_source_item_proxies_count: ", len(proxies2))
+
+        if "name-prefix" in item:
+            name_prefix = item["name-prefix"]
+            for p in proxies2:
+                p["name"] = name_prefix + " - " + p["name"]
+                print(p["name"])
 
         if "proxies-filters" in item:
             black_regex = get_proxies_regex(item, "black-regex")
@@ -89,7 +97,7 @@ def handle_v1(data: OrderedDict) -> OrderedDict:
     rule_sets_dicts: list = data["rule-sets"]
     rule_sets: dict = {}
 
-    if not rule_sets_dicts is None:
+    if rule_sets_dicts is not None:
         for item in rule_sets_dicts:
             item_name: str = item["name"]
             item_type: str = item["type"]
@@ -120,18 +128,26 @@ def handle_v1(data: OrderedDict) -> OrderedDict:
     return result
 
 
+def get_clash_item(ordered_dict: OrderedDict, node1: str, node2: str):
+    if node1 in ordered_dict:
+        return ordered_dict[node1]
+    if node2 in ordered_dict:
+        return ordered_dict[node2]
+    return ordered_dict
+
+
 def load_url_proxies(url: str) -> OrderedDict:
     data = requests.get(url)
     data_yaml: OrderedDict = yaml.load(data.content.decode(), Loader=yaml.Loader)
 
-    return data_yaml["Proxy"]
+    return get_clash_item(data_yaml, "Proxy", "proxies")
 
 
 def load_file_proxies(path: str) -> OrderedDict:
     with open(path, "r") as f:
         data_yaml: OrderedDict = yaml.load(f, Loader=yaml.Loader)
 
-    return data_yaml["Proxy"]
+    return get_clash_item(data_yaml, "Proxy", "proxies")
 
 
 def load_plain_proxies(data: OrderedDict) -> OrderedDict:
@@ -139,10 +155,10 @@ def load_plain_proxies(data: OrderedDict) -> OrderedDict:
 
 
 def load_url_rule_set(url: str, target_map: dict, skip_rule: set, skip_target: set) -> list:
-    data = yaml.load(requests.get(url).content, Loader=yaml.Loader)
+    data: OrderedDict = yaml.load(requests.get(url).content, Loader=yaml.Loader)
     result: list = []
 
-    for rule in data:
+    for rule in get_clash_item(data, "Rule", "rules"):
         original_target = str(rule).split(",")[-1]
         map_to: str = target_map.get(original_target)
         if str(rule).split(',')[0] not in skip_rule and original_target not in skip_target:
@@ -156,10 +172,10 @@ def load_url_rule_set(url: str, target_map: dict, skip_rule: set, skip_target: s
 
 def load_file_rule_set(path: str, target_map: dict, skip_rule: set, skip_target: set) -> list:
     with open(path, "r") as f:
-        data = yaml.load(f, Loader=yaml.Loader)
+        data: OrderedDict = yaml.load(f, Loader=yaml.Loader)
     result: list = []
 
-    for rule in data["Rule"]:
+    for rule in get_clash_item(data, "Rule", "rules"):
         original_target = str(rule).split(",")[-1]
         map_to: str = target_map.get(original_target)
         if str(rule).split(',')[0] not in skip_rule and original_target not in skip_target:

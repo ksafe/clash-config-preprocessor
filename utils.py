@@ -1,7 +1,6 @@
-from collections import OrderedDict
-
 import yaml
 import yaml.resolver
+from collections import OrderedDict
 
 
 def setup_order_yaml():
