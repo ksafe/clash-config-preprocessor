@@ -121,9 +121,9 @@ def handle_v1(data: OrderedDict) -> OrderedDict:
         else:
             rules.append(rule)
 
-    result["Proxy"] = proxies
-    result["Proxy Group"] = proxy_groups
-    result["Rule"] = rules
+    result["proxies"] = proxies
+    result["proxy-groups"] = proxy_groups
+    result["rules"] = rules
 
     return result
 
