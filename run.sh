@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 ~/Downloads/Config/rsync.sh rules
 rm -f config/*.yaml
-python main.py preclash/ksafe.yaml config/ksafe.yaml
-python main.py preclash/DlerCloud.yaml config/Dler.yaml
-#python main.py preclash/DlerCloud-SS.yaml config/DlerCloud-SS.yaml
-#python main.py preclash/DlerCloud-V2Ray.yaml config/DlerCloud-V2Ray.yaml
-#python main.py preclash/DlerCloud-Trojan.yaml config/DlerCloud-Trojan.yaml
-#python main.py preclash/Renzhe.yaml config/Renzhe.yaml
+#python main.py preclash/ksafe.yaml config/ksafe.yaml
+#python main.py preclash/dler.yaml config/dler.yaml
+python main.py preclash/dler-ss.yaml config/dler-ss.yaml
+python main.py preclash/dler-v2ray.yaml config/dler-v2ray.yaml
+python main.py preclash/dler-trojan.yaml config/dler-trojan.yaml
+python main.py preclash/renzhe.yaml config/renzhe.yaml
 ./rsync.sh

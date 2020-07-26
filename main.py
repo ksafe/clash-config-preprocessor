@@ -34,7 +34,7 @@ def main():
         print("Unsupported version")
         return
 
-    result = yaml.dump(result, default_flow_style=False)
+    result = yaml.dump(result, default_flow_style=False, allow_unicode=True)
     regex = re.compile(r'\b(password:\s*)\b[\"\']?(.*)[\'\"]?\b', re.VERBOSE)
     result = regex.sub(r'\1"\2"', result)
     if len(sys.argv) > 2:

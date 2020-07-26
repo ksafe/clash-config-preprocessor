@@ -35,13 +35,10 @@ def handle_v1(data: OrderedDict) -> OrderedDict:
         elif item["type"] == "plain":
             proxies2.append(load_plain_proxies(item))
 
-        print("proxy_source_item_proxies_count: ", len(proxies2))
-
         if "name-prefix" in item:
             name_prefix = item["name-prefix"]
             for p in proxies2:
                 p["name"] = name_prefix + " - " + p["name"]
-                print(p["name"])
 
         if "proxies-filters" in item:
             black_regex = get_proxies_regex(item, "black-regex")
@@ -137,6 +134,7 @@ def get_clash_item(ordered_dict: OrderedDict, node1: str, node2: str):
 
 
 def load_url_proxies(url: str) -> OrderedDict:
+    print("Load Url: ", url)
     data = requests.get(url)
     data_yaml: OrderedDict = yaml.load(data.content.decode(), Loader=yaml.Loader)
 
@@ -144,6 +142,7 @@ def load_url_proxies(url: str) -> OrderedDict:
 
 
 def load_file_proxies(path: str) -> OrderedDict:
+    print("Load File: ", path)
     with open(path, "r") as f:
         data_yaml: OrderedDict = yaml.load(f, Loader=yaml.Loader)
 
@@ -151,10 +150,12 @@ def load_file_proxies(path: str) -> OrderedDict:
 
 
 def load_plain_proxies(data: OrderedDict) -> OrderedDict:
+    print("Load Plain: ", data)
     return data["data"]
 
 
 def load_url_rule_set(url: str, target_map: dict, skip_rule: set, skip_target: set) -> list:
+    print("Load Rule Url: ", url)
     data: OrderedDict = yaml.load(requests.get(url).content, Loader=yaml.Loader)
     result: list = []
 
@@ -171,6 +172,7 @@ def load_url_rule_set(url: str, target_map: dict, skip_rule: set, skip_target: s
 
 
 def load_file_rule_set(path: str, target_map: dict, skip_rule: set, skip_target: set) -> list:
+    print("Load Rule File: ", path)
     with open(path, "r") as f:
         data: OrderedDict = yaml.load(f, Loader=yaml.Loader)
     result: list = []
@@ -179,7 +181,7 @@ def load_file_rule_set(path: str, target_map: dict, skip_rule: set, skip_target:
         original_target = str(rule).split(",")[-1]
         map_to: str = target_map.get(original_target)
         if str(rule).split(',')[0] not in skip_rule and original_target not in skip_target:
-            if not map_to is None:
+            if map_to is not None:
                 result.append(str(rule).replace(original_target, map_to))
             else:
                 result.append(rule)
