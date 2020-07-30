@@ -6,7 +6,7 @@ SHELL_FOLDER=$(
 cd "${SHELL_FOLDER}" || exit
 
 export ALL_PROXY=socks5://192.168.88.3:7891
-
+mkdir -p config/rule_provider
 rm -f config/rule_provider/*.yaml
 echo "下载翻墙策略..."
 curl 'https://raw.githubusercontent.com/DivineEngine/Profiles/master/Clash/RuleSet/China.yaml' -o config/rule_provider/China.yaml || exit

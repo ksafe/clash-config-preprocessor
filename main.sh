@@ -4,6 +4,7 @@ SHELL_FOLDER=$(
   pwd
 )
 cd "${SHELL_FOLDER}" || exit
+mkdir -p config
 rm -f config/*.yaml
 echo "生成Clash配置文件..."
 python main.py private/preclash/ksafe.yaml config/ksafe.yaml
