@@ -98,6 +98,7 @@ def handle_v1(data: OrderedDict) -> OrderedDict:
         for item in rule_sets_dicts:
             item_name: str = item["name"]
             item_type: str = item["type"]
+            item_behavior: str = item.get("behavior", "classical")
             item_map: dict = {}
             item_rule_skip = item.get("rule-skip", {})
             item_target_skip = item.get("target-skip", {})
@@ -106,15 +107,23 @@ def handle_v1(data: OrderedDict) -> OrderedDict:
                 item_map[kv[0]] = kv[1]
 
             if item_type == "url":
-                rule_sets[item_name] = load_url_rule_set(item["url"], item_map, item_rule_skip, item_target_skip)
+                rule_sets[item_name] = load_url_rule_set(item["url"], item_behavior, item_map, item_rule_skip, item_target_skip)
             elif item_type == "file":
-                rule_sets[item_name] = load_file_rule_set(item["path"], item_map, item_rule_skip, item_target_skip)
+                rule_sets[item_name] = load_file_rule_set(item["path"], item_behavior, item_map, item_rule_skip, item_target_skip)
 
     rules: list = []
 
     for rule in data["rule"]:
         if str(rule).startswith("RULE-SET"):
-            rules.extend(rule_sets[str(rule).split(",")[1]])
+            rule_set = str(rule).split(",")
+            if len(rule_set) < 3:
+                rules.extend(rule_sets[rule_set[1]])
+            else:
+                for item in rule_sets[rule_set[1]]:
+                    if str(item).endswith("no-resolve"):
+                        rules.append(str(item).replace(",no-resolve", "," + rule_set[2] + ",no-resolve"))
+                    else:
+                        rules.append(item + "," + rule_set[2])
         else:
             rules.append(rule)
 
@@ -125,11 +134,10 @@ def handle_v1(data: OrderedDict) -> OrderedDict:
     return result
 
 
-def get_clash_item(ordered_dict: OrderedDict, node1: str, node2: str):
-    if node1 in ordered_dict:
-        return ordered_dict[node1]
-    if node2 in ordered_dict:
-        return ordered_dict[node2]
+def get_clash_item(ordered_dict: OrderedDict, *nodes: str):
+    for node in nodes:
+        if node in ordered_dict:
+            return ordered_dict[node]
     return ordered_dict
 
 
@@ -154,12 +162,14 @@ def load_plain_proxies(data: OrderedDict) -> OrderedDict:
     return data["data"]
 
 
-def load_url_rule_set(url: str, target_map: dict, skip_rule: set, skip_target: set) -> list:
+def load_url_rule_set(url: str, behavior: str, target_map: dict, skip_rule: set, skip_target: set) -> list:
     print("Load Rule Url: ", url)
     data: OrderedDict = yaml.load(requests.get(url).content, Loader=yaml.Loader)
     result: list = []
 
-    for rule in get_clash_item(data, "Rule", "rules"):
+    for rule in get_clash_item(data, "Rule", "rules", "payload"):
+        if behavior == "ipcidr":
+            rule = "IP-CIDR," + rule
         original_target = str(rule).split(",")[-1]
         map_to: str = target_map.get(original_target)
         if str(rule).split(',')[0] not in skip_rule and original_target not in skip_target:
@@ -171,13 +181,15 @@ def load_url_rule_set(url: str, target_map: dict, skip_rule: set, skip_target: s
     return result
 
 
-def load_file_rule_set(path: str, target_map: dict, skip_rule: set, skip_target: set) -> list:
+def load_file_rule_set(path: str, behavior: str, target_map: dict, skip_rule: set, skip_target: set) -> list:
     print("Load Rule File: ", path)
     with open(path, "r") as f:
         data: OrderedDict = yaml.load(f, Loader=yaml.Loader)
     result: list = []
 
-    for rule in get_clash_item(data, "Rule", "rules"):
+    for rule in get_clash_item(data, "Rule", "rules", "payload"):
+        if behavior == "ipcidr":
+            rule = "IP-CIDR," + rule
         original_target = str(rule).split(",")[-1]
         map_to: str = target_map.get(original_target)
         if str(rule).split(',')[0] not in skip_rule and original_target not in skip_target:

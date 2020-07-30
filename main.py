@@ -25,6 +25,7 @@ def main():
         print(_HELP_TEXT)
         return
 
+    print("开始执行: " + sys.argv[1] + " ...")
     with open(sys.argv[1], "r") as f:
         data: OrderedDict = yaml.load(f, Loader=yaml.Loader)
 
@@ -40,6 +41,7 @@ def main():
     if len(sys.argv) > 2:
         with open(sys.argv[2], "w") as f:
             f.write(result)
+        print("生成Clash配置文件: " + sys.argv[2])
     else:
         print(result)
 

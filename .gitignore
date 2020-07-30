@@ -1,6 +1,6 @@
-venv
-__pycache__
-.idea
-.vscode
-preclash
-config
+venv/
+__pycache__/
+.idea/
+.vscode/
+private/preclash/
+config/
