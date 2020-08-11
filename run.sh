@@ -4,7 +4,7 @@ SHELL_FOLDER=$(
   pwd
 )
 cd "${SHELL_FOLDER}" || exit
-./private/proxy.sh
-./rules.sh
-./main.sh
-./private/rsync.sh
+./private/proxy.sh || exit
+./rules.sh || exit
+./main.sh || exit
+./private/rsync.sh || exit
