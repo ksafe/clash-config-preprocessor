@@ -14,4 +14,4 @@ python main.py private/preclash/dler-trojan.yaml config/dler-trojan.yaml
 #python main.py private/preclash/dler-ss-ad.yaml config/dler-ss-ad.yaml
 #python main.py private/preclash/dler-v2ray-ad.yaml config/dler-v2ray-ad.yaml
 #python main.py private/preclash/dler-trojan-ad.yaml config/dler-trojan-ad.yaml
-python main.py private/preclash/renzhe.yaml config/renzhe.yaml
+#python main.py private/preclash/renzhe.yaml config/renzhe.yaml
